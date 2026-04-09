@@ -1,6 +1,6 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
 import { RecipeSuggestionDto, TimeOfDay } from './dto/recipe-suggestion.dto';
 import { AiRecipeResponse } from './types/recipe.types';
 
@@ -13,109 +13,94 @@ const MEAL_TYPE_HINTS: Record<TimeOfDay, string> = {
 
 @Injectable()
 export class RecipesService {
-  private readonly genAI: GoogleGenerativeAI;
+  private readonly ai: OpenAI;
 
   constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.getOrThrow<string>('GEMINI_API_KEY');
-    this.genAI = new GoogleGenerativeAI(apiKey);
+    const apiKey = this.configService.getOrThrow<string>('GPT_API_KEY');
+    this.ai = new OpenAI({ apiKey });
   }
 
-  private buildPrompt(dto: RecipeSuggestionDto): string {
+  private readonly systemPrompt = `
+You are a professional chef and nutritionist who specialises in Indian cuisine.
+Lean towards Indian recipes whenever the pantry ingredients allow it; suggest other cuisines only when the ingredients clearly don't suit Indian cooking.
+
+Return exactly 3 recipes as a JSON object matching this schema — no extra keys, no markdown:
+{
+  "recipes": [{
+    "id": string,           // short unique alphanumeric e.g. "r1a2b3"
+    "title": string,
+    "description": string,  // 1-2 appetising sentences
+    "timeToCook": number,   // total minutes (prep + cook)
+    "mealType": "breakfast" | "lunch" | "dinner" | "snack",
+    "tags": [string],       // e.g. ["quick", "vegetarian", "high-protein"]
+    "nutritionalData": { "calories": number, "protein": number, "carbs": number, "fat": number },
+    "ingredients": [{
+      "id": string,
+      "name": string,
+      "quantity": string,         // human-readable e.g. "200 g"
+      "inPantry": boolean,
+      "quantityToDeduct": number  // numeric amount to deduct in the pantry's own unit; 0 for non-pantry items
+    }],
+    "instructions": [string]      // 4–8 plain-English steps
+  }]
+}`.trim();
+
+  private buildUserPrompt(dto: RecipeSuggestionDto): string {
     const { timeOfDay, maxPrepTime, pantryIngredients } = dto;
-
-    const pantryList =
-      pantryIngredients.length > 0
-        ? pantryIngredients.join(', ')
-        : 'none specified — suggest anything suitable for the time of day';
-
     const mealHint = MEAL_TYPE_HINTS[timeOfDay];
+    const pantryList = pantryIngredients
+      .map((p) => `${p.name} (${p.quantity} ${p.unit})`)
+      .join(', ');
 
     return `
-You are a professional chef and nutritionist. Suggest exactly 3 distinct recipes tailored to the context below.
+Time of day: ${timeOfDay} (${mealHint})
+Max total time: ${maxPrepTime} minutes
+Pantry: ${pantryList}
 
-Context:
-- Time of day: ${timeOfDay} → ideal for ${mealHint}
-- Maximum total time (prep + cook): ${maxPrepTime} minutes
-- Available pantry ingredients: ${pantryList}
-
-Rules:
-1. Every recipe must be completable within ${maxPrepTime} minutes total.
-2. Vary the effort: one quick (roughly one-third of the max time), one medium, one closer to the limit.
-3. Prioritise recipes that use the listed pantry ingredients. Set "inPantry": true for any ingredient that matches the pantry list (case-insensitive); false for anything extra the user would need to buy.
-4. Choose a mealType appropriate for the time of day: morning → breakfast or snack, afternoon → lunch or snack, evening → dinner or lunch, night → snack or dinner.
-5. Write 4–8 clear, numbered cooking instructions per recipe as an array of plain-English step strings.
-6. Nutritional values (calories, protein, carbs, fat) must be realistic per-serving estimates in grams/kcal.
-7. Generate a short unique alphanumeric string (e.g. "r1a2b3") for each recipe "id" and each ingredient "id".
-8. Tags should be short descriptors (e.g. "quick", "vegetarian", "high-protein", "gluten-free").
-
-IMPORTANT: Respond with ONLY a raw JSON object. No markdown, no code fences, no explanation text — just the JSON.
-
-Required schema:
-{
-  "recipes": [
-    {
-      "id": "string",
-      "title": "string",
-      "description": "string (1–2 sentences, appetising and informative)",
-      "timeToCook": number,
-      "mealType": "breakfast" | "lunch" | "dinner" | "snack",
-      "tags": ["string"],
-      "nutritionalData": {
-        "calories": number,
-        "protein": number,
-        "carbs": number,
-        "fat": number
-      },
-      "ingredients": [
-        {
-          "id": "string",
-          "name": "string",
-          "quantity": "string",
-          "inPantry": boolean
-        }
-      ],
-      "instructions": [
-        "Step 1: ...",
-        "Step 2: ..."
-      ]
-    }
-  ]
-}
-`.trim();
+Constraints:
+- All 3 recipes must finish within ${maxPrepTime} minutes. Vary effort: one quick (~${Math.round(maxPrepTime / 3)} min), one medium, one near the limit.
+- mealType must suit the time of day: morning→breakfast/snack, afternoon→lunch/snack, evening→dinner/lunch, night→snack/dinner.
+- Maximise use of pantry items. Set inPantry true for any ingredient matching the pantry (case-insensitive). For each inPantry ingredient set quantityToDeduct in the same unit the pantry uses (e.g. pantry has rice in kgs, recipe needs 200 g → quantityToDeduct: 0.2). Set quantityToDeduct: 0 for non-pantry ingredients.
+- Nutritional values must be realistic per-serving estimates.`.trim();
   }
 
   async getSuggestions(dto: RecipeSuggestionDto): Promise<AiRecipeResponse> {
-    const model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    const prompt = this.buildPrompt(dto);
+    const userPrompt = this.buildUserPrompt(dto);
 
     let rawText: string;
     try {
-      const result = await model.generateContent(prompt);
-      rawText = result.response.text();
+      const response = await this.ai.chat.completions.create({
+        model: 'gpt-5-nano',
+        messages: [
+          { role: 'system', content: this.systemPrompt },
+          { role: 'user', content: userPrompt },
+        ],
+        response_format: { type: 'json_object' },
+      });
+      rawText = response.choices[0]?.message?.content ?? '';
     } catch (error) {
+      console.error('[RecipesService] OpenAI API error:', error);
       throw new InternalServerErrorException(
-        'Failed to reach Gemini API. Check your GEMINI_API_KEY and network access.',
+        `OpenAI API call failed: ${error instanceof Error ? error.message : String(error)}`,
       );
     }
 
-    // Strip markdown code fences if the model includes them despite instructions
-    const cleaned = rawText
-      .replace(/^```(?:json)?\s*/i, '')
-      .replace(/\s*```\s*$/, '')
-      .trim();
-
     let parsed: AiRecipeResponse;
     try {
-      parsed = JSON.parse(cleaned) as AiRecipeResponse;
+      parsed = JSON.parse(rawText) as AiRecipeResponse;
     } catch {
+      console.error(
+        '[RecipesService] Failed to parse OpenAI response:',
+        rawText,
+      );
       throw new InternalServerErrorException(
-        'Gemini returned a response that could not be parsed as JSON.',
+        'OpenAI returned a response that could not be parsed as JSON.',
       );
     }
 
     if (!Array.isArray(parsed.recipes)) {
       throw new InternalServerErrorException(
-        'Gemini response is missing the "recipes" array.',
+        'OpenAI response is missing the "recipes" array.',
       );
     }
 

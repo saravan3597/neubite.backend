@@ -16,6 +16,9 @@ const users_module_1 = require("./users/users.module");
 const auth_module_1 = require("./auth/auth.module");
 const recipes_module_1 = require("./recipes/recipes.module");
 const ingredients_module_1 = require("./ingredients/ingredients.module");
+const pantry_module_1 = require("./pantry/pantry.module");
+const grocery_module_1 = require("./grocery/grocery.module");
+const saved_recipes_module_1 = require("./saved-recipes/saved-recipes.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -50,7 +53,10 @@ exports.AppModule = AppModule = __decorate([
             users_module_1.UsersModule,
             auth_module_1.AuthModule,
             recipes_module_1.RecipesModule,
-            ingredients_module_1.IngredientsModule
+            ingredients_module_1.IngredientsModule,
+            pantry_module_1.PantryModule,
+            grocery_module_1.GroceryModule,
+            saved_recipes_module_1.SavedRecipesModule,
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],
