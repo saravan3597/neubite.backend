@@ -28,6 +28,7 @@ import { SavedRecipesModule } from './saved-recipes/saved-recipes.module';
             url: dbUrl,
             autoLoadEntities: true,
             synchronize: process.env.NODE_ENV !== 'production',
+            ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
           };
         }
         
