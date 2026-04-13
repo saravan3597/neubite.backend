@@ -1,9 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { CognitoAuthGuard } from '../auth/guards/cognito-auth.guard';
 import { RecipesService } from './recipes.service';
 import { RecipeSuggestionDto } from './dto/recipe-suggestion.dto';
 import { AiRecipeResponse } from './types/recipe.types';
 
 @Controller('recipes')
+@UseGuards(CognitoAuthGuard)
 export class RecipesController {
   constructor(private readonly recipesService: RecipesService) {}
 

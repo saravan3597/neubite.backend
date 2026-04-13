@@ -7,6 +7,9 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { RecipesModule } from './recipes/recipes.module';
 import { IngredientsModule } from './ingredients/ingredients.module';
+import { PantryModule } from './pantry/pantry.module';
+import { GroceryModule } from './grocery/grocery.module';
+import { SavedRecipesModule } from './saved-recipes/saved-recipes.module';
 
 @Module({
   imports: [
@@ -37,10 +40,13 @@ import { IngredientsModule } from './ingredients/ingredients.module';
         };
       },
     }),
-    UsersModule, 
-    AuthModule, 
-    RecipesModule, 
-    IngredientsModule
+    UsersModule,
+    AuthModule,
+    RecipesModule,
+    IngredientsModule,
+    PantryModule,
+    GroceryModule,
+    SavedRecipesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

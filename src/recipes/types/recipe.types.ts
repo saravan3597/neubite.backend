@@ -5,6 +5,7 @@ export interface Ingredient {
   name: string;
   quantity: string;
   inPantry: boolean;
+  quantityToDeduct: number;
 }
 
 export interface NutritionalData {
