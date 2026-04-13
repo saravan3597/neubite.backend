@@ -58,8 +58,15 @@ TypeORM with **PostgreSQL** (via `DATABASE_URL`) falling back to **SQLite** (`ne
 ### Key Patterns
 
 - **DTOs** use `class-validator` decorators; the global `ValidationPipe` applies `whitelist: true, transform: true`
-- **Exception handling**: `AllExceptionsFilter` wraps all errors into `{ statusCode, timestamp, path, message }`
-- **Repository pattern**: Services receive `@InjectRepository()` and all DB access is through TypeORM repositories
+- **Exception handling**: `AllExceptionsFilter` wraps all errors into `{ statusCode, timestamp, path, message }`. Never throw generic Node errors — use NestJS HTTP exceptions (`NotFoundException`, `BadRequestException`, etc.).
+- **Repository pattern**: Services receive `@InjectRepository()` and all DB access is through TypeORM repositories. Never write raw SQL.
+- **Thin controllers**: Controllers must only handle HTTP routing, extract DTOs, and call the appropriate service — no business logic in controllers.
+- **Module boundaries**: Every distinct domain must have its own standalone NestJS module.
+
+### Domain Rules
+
+- Macro calculations (protein, carbs, fats) must always be computed on the backend in dedicated utility functions or helper services — never on the client.
+- Quantities and measurements must be stored in standardized base units (grams, milliliters) in the database.
 
 ### Environment Variables
 
