@@ -1,9 +1,13 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity('grocery_items')
 export class GroceryItemEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Index()
+  @Column()
+  userId: string;
 
   @Column()
   name: string;
@@ -13,4 +17,7 @@ export class GroceryItemEntity {
 
   @CreateDateColumn()
   createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 }

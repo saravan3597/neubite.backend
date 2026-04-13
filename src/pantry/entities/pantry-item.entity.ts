@@ -1,9 +1,13 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity('pantry_items')
 export class PantryItemEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @Index()
+  @Column()
+  userId: string;
 
   @Column()
   name: string;

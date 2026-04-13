@@ -11,32 +11,32 @@ export class GroceryService {
     private readonly repo: Repository<GroceryItemEntity>,
   ) {}
 
-  findAll(): Promise<GroceryItemEntity[]> {
-    return this.repo.find({ order: { createdAt: 'ASC' } });
+  findAll(userId: string): Promise<GroceryItemEntity[]> {
+    return this.repo.find({ where: { userId }, order: { createdAt: 'ASC' } });
   }
 
-  async upsert(dto: CreateGroceryItemDto): Promise<GroceryItemEntity> {
-    const existing = await this.repo.findOne({ where: { id: dto.id } });
+  async upsert(userId: string, dto: CreateGroceryItemDto): Promise<GroceryItemEntity> {
+    const existing = await this.repo.findOne({ where: { id: dto.id, userId } });
     if (existing) {
-      await this.repo.update(dto.id, { name: dto.name, isPurchased: dto.isPurchased ?? existing.isPurchased });
-      return this.repo.findOne({ where: { id: dto.id } }) as Promise<GroceryItemEntity>;
+      await this.repo.update({ id: dto.id, userId }, { name: dto.name, isPurchased: dto.isPurchased ?? existing.isPurchased });
+      return this.repo.findOne({ where: { id: dto.id, userId } }) as Promise<GroceryItemEntity>;
     }
-    const item = this.repo.create({ ...dto, isPurchased: dto.isPurchased ?? false });
+    const item = this.repo.create({ ...dto, userId, isPurchased: dto.isPurchased ?? false });
     return this.repo.save(item);
   }
 
-  async setPurchased(id: string, isPurchased: boolean): Promise<GroceryItemEntity> {
-    await this.repo.update(id, { isPurchased });
-    return this.repo.findOne({ where: { id } }) as Promise<GroceryItemEntity>;
+  async setPurchased(userId: string, id: string, isPurchased: boolean): Promise<GroceryItemEntity> {
+    await this.repo.update({ id, userId }, { isPurchased });
+    return this.repo.findOne({ where: { id, userId } }) as Promise<GroceryItemEntity>;
   }
 
-  async remove(id: string): Promise<void> {
-    await this.repo.delete(id);
+  async remove(userId: string, id: string): Promise<void> {
+    await this.repo.delete({ id, userId });
   }
 
-  async bulkReplace(items: CreateGroceryItemDto[]): Promise<GroceryItemEntity[]> {
-    await this.repo.clear();
-    const entities = items.map((dto) => this.repo.create({ ...dto, isPurchased: dto.isPurchased ?? false }));
+  async bulkReplace(userId: string, items: CreateGroceryItemDto[]): Promise<GroceryItemEntity[]> {
+    await this.repo.delete({ userId });
+    const entities = items.map((dto) => this.repo.create({ ...dto, userId, isPurchased: dto.isPurchased ?? false }));
     return this.repo.save(entities);
   }
 }

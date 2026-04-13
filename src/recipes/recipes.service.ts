@@ -1,4 +1,4 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { RecipeSuggestionDto, TimeOfDay } from './dto/recipe-suggestion.dto';
@@ -13,6 +13,7 @@ const MEAL_TYPE_HINTS: Record<TimeOfDay, string> = {
 
 @Injectable()
 export class RecipesService {
+  private readonly logger = new Logger(RecipesService.name);
   private readonly ai: OpenAI;
 
   constructor(private readonly configService: ConfigService) {
@@ -70,7 +71,7 @@ Constraints:
     let rawText: string;
     try {
       const response = await this.ai.chat.completions.create({
-        model: 'gpt-5-nano',
+        model: 'gpt-4o-mini',
         messages: [
           { role: 'system', content: this.systemPrompt },
           { role: 'user', content: userPrompt },
@@ -79,7 +80,7 @@ Constraints:
       });
       rawText = response.choices[0]?.message?.content ?? '';
     } catch (error) {
-      console.error('[RecipesService] OpenAI API error:', error);
+      this.logger.error('OpenAI API error', error instanceof Error ? error.stack : String(error));
       throw new InternalServerErrorException(
         `OpenAI API call failed: ${error instanceof Error ? error.message : String(error)}`,
       );
@@ -89,10 +90,7 @@ Constraints:
     try {
       parsed = JSON.parse(rawText) as AiRecipeResponse;
     } catch {
-      console.error(
-        '[RecipesService] Failed to parse OpenAI response:',
-        rawText,
-      );
+      this.logger.error('Failed to parse OpenAI response');
       throw new InternalServerErrorException(
         'OpenAI returned a response that could not be parsed as JSON.',
       );

@@ -12,32 +12,32 @@ export class PantryService {
     private readonly repo: Repository<PantryItemEntity>,
   ) {}
 
-  findAll(): Promise<PantryItemEntity[]> {
-    return this.repo.find({ order: { createdAt: 'ASC' } });
+  findAll(userId: string): Promise<PantryItemEntity[]> {
+    return this.repo.find({ where: { userId }, order: { createdAt: 'ASC' } });
   }
 
-  async upsert(dto: CreatePantryItemDto): Promise<PantryItemEntity> {
-    const existing = await this.repo.findOne({ where: { id: dto.id } });
+  async upsert(userId: string, dto: CreatePantryItemDto): Promise<PantryItemEntity> {
+    const existing = await this.repo.findOne({ where: { id: dto.id, userId } });
     if (existing) {
-      await this.repo.update(dto.id, { name: dto.name, quantity: dto.quantity, unit: dto.unit, expiryDate: dto.expiryDate });
-      return this.repo.findOne({ where: { id: dto.id } }) as Promise<PantryItemEntity>;
+      await this.repo.update({ id: dto.id, userId }, { name: dto.name, quantity: dto.quantity, unit: dto.unit, expiryDate: dto.expiryDate });
+      return this.repo.findOne({ where: { id: dto.id, userId } }) as Promise<PantryItemEntity>;
     }
-    const item = this.repo.create(dto);
+    const item = this.repo.create({ ...dto, userId });
     return this.repo.save(item);
   }
 
-  async update(id: string, dto: UpdatePantryItemDto): Promise<PantryItemEntity> {
-    await this.repo.update(id, dto);
-    return this.repo.findOne({ where: { id } }) as Promise<PantryItemEntity>;
+  async update(userId: string, id: string, dto: UpdatePantryItemDto): Promise<PantryItemEntity> {
+    await this.repo.update({ id, userId }, dto);
+    return this.repo.findOne({ where: { id, userId } }) as Promise<PantryItemEntity>;
   }
 
-  async remove(id: string): Promise<void> {
-    await this.repo.delete(id);
+  async remove(userId: string, id: string): Promise<void> {
+    await this.repo.delete({ id, userId });
   }
 
-  async bulkReplace(items: CreatePantryItemDto[]): Promise<PantryItemEntity[]> {
-    await this.repo.clear();
-    const entities = items.map((dto) => this.repo.create(dto));
+  async bulkReplace(userId: string, items: CreatePantryItemDto[]): Promise<PantryItemEntity[]> {
+    await this.repo.delete({ userId });
+    const entities = items.map((dto) => this.repo.create({ ...dto, userId }));
     return this.repo.save(entities);
   }
 }
