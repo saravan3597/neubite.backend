@@ -2,3 +2,13 @@ node_modules
 dist
 .env
 *.sqlite
+*.log
+
+# JWKS public key cache (generated at runtime — re-seed with npm run seed:jwks)
+.cognito-jwks-cache.json
+.cognito-jwks-raw.json
+
+# Editor
+.vscode
+.idea
+.DS_Store

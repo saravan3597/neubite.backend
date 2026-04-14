@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { RecipeSuggestionDto, TimeOfDay } from './dto/recipe-suggestion.dto';
@@ -18,7 +22,7 @@ export class RecipesService {
 
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.getOrThrow<string>('GPT_API_KEY');
-    this.ai = new OpenAI({ apiKey });
+    this.ai = new OpenAI({ apiKey, timeout: 30_000, maxRetries: 1 });
   }
 
   private readonly systemPrompt = `
@@ -71,16 +75,20 @@ Constraints:
     let rawText: string;
     try {
       const response = await this.ai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-nano',
         messages: [
           { role: 'system', content: this.systemPrompt },
           { role: 'user', content: userPrompt },
         ],
         response_format: { type: 'json_object' },
+        max_tokens: 2500,
       });
       rawText = response.choices[0]?.message?.content ?? '';
     } catch (error) {
-      this.logger.error('OpenAI API error', error instanceof Error ? error.stack : String(error));
+      this.logger.error(
+        'OpenAI API error',
+        error instanceof Error ? error.stack : String(error),
+      );
       throw new InternalServerErrorException(
         `OpenAI API call failed: ${error instanceof Error ? error.message : String(error)}`,
       );

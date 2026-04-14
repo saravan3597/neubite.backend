@@ -1,4 +1,4 @@
-import { IsNumber, IsString, MaxLength, Min } from 'class-validator';
+import { IsNumber, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
 export class CreatePantryItemDto {
   @IsString()
@@ -17,7 +17,8 @@ export class CreatePantryItemDto {
   @MaxLength(20)
   unit: string;
 
+  @IsOptional()
   @IsString()
   @MaxLength(20)
-  expiryDate: string;
+  expiryDate?: string | null;
 }
