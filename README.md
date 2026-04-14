@@ -120,7 +120,31 @@ src/
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `GPT_API_KEY` | For AI routes | OpenAI API key |
+| `GPT_MODEL` | No | OpenAI model name — defaults to `gpt-5-nano` (faster models yield better results) |
 | `DATABASE_URL` | No | PostgreSQL URL — falls back to SQLite if unset |
 | `COGNITO_USER_POOL_ID` | For auth | e.g. `us-east-1_xxxxxxxxx` |
 | `COGNITO_REGION` | For auth | e.g. `us-east-1` |
 | `ALLOWED_ORIGINS` | No | Comma-separated CORS origins (defaults include `localhost:5173`, `capacitor://localhost`) |
+
+---
+
+## Claude Code
+
+This repo includes a `CLAUDE.md` file that gives [Claude Code](https://claude.ai/code) full context about the project — module architecture, domain rules, key patterns, and environment variables. Claude Code can navigate, edit, and extend this codebase without additional explanation.
+
+To get started:
+
+```bash
+# Install Claude Code (if not already installed)
+npm install -g @anthropic/claude-code
+
+# Launch in this repo
+claude
+```
+
+Key things Claude Code knows about this project:
+- All routes are protected by `CognitoAuthGuard` — use `@UseGuards(CognitoAuthGuard)` and `@CurrentUser()` to scope queries by `userId`
+- Business logic lives in services only — controllers are thin HTTP routers
+- Macro/nutritional calculations must be done on the backend, never the client
+- Quantities are stored in standardized base units (grams, millilitres)
+- TypeORM `synchronize: true` is active in non-prod — no migration files needed locally
