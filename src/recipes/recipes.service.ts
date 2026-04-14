@@ -20,8 +20,13 @@ export class RecipesService {
   private readonly logger = new Logger(RecipesService.name);
   private readonly ai: OpenAI;
 
+  // Faster/newer models (e.g. gpt-4o-mini, gpt-5-nano) yield significantly
+  // better structured JSON output and lower latency than gpt-3.5-turbo.
+  private readonly model: string;
+
   constructor(private readonly configService: ConfigService) {
     const apiKey = this.configService.getOrThrow<string>('GPT_API_KEY');
+    this.model = this.configService.get<string>('GPT_MODEL') ?? 'gpt-5-nano';
     this.ai = new OpenAI({ apiKey, timeout: 30_000, maxRetries: 1 });
   }
 
@@ -75,7 +80,7 @@ Constraints:
     let rawText: string;
     try {
       const response = await this.ai.chat.completions.create({
-        model: 'gpt-5-nano',
+        model: this.model,
         messages: [
           { role: 'system', content: this.systemPrompt },
           { role: 'user', content: userPrompt },
