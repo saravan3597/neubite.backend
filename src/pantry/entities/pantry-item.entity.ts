@@ -18,8 +18,8 @@ export class PantryItemEntity {
   @Column()
   unit: string;
 
-  @Column()
-  expiryDate: string;
+  @Column({ nullable: true, default: null })
+  expiryDate: string | null;
 
   @CreateDateColumn()
   createdAt: Date;
