@@ -2,6 +2,16 @@
 
 Neubite's NestJS backend powers AI recipe suggestions, pantry and grocery list management, and saved recipes. It authenticates via AWS Cognito (RS256 JWT) and connects to PostgreSQL in production, with an automatic SQLite fallback for local development.
 
+![NestJS](https://img.shields.io/badge/NestJS_v11-E0234E?style=flat&logo=nestjs&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?style=flat&logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat&logo=postgresql&logoColor=white)
+![TypeORM](https://img.shields.io/badge/TypeORM-FE0803?style=flat&logo=typeorm&logoColor=white)
+![OpenAI](https://img.shields.io/badge/OpenAI_GPT-412991?style=flat&logo=openai&logoColor=white)
+![AWS Cognito](https://img.shields.io/badge/AWS_Cognito-FF9900?style=flat&logo=amazonaws&logoColor=white)
+![AWS ECS](https://img.shields.io/badge/AWS_ECS_Fargate-FF9900?style=flat&logo=amazonaws&logoColor=white)
+![AWS RDS](https://img.shields.io/badge/AWS_RDS-527FFF?style=flat&logo=amazonrds&logoColor=white)
+![Claude](https://img.shields.io/badge/Built_with_Claude_Code-D97757?style=flat&logo=anthropic&logoColor=white)
+
 ---
 
 ## Tech Stack
