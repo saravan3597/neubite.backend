@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /Users/saravansomanchi/Documents/projects/neubite/neubite.backend && npm run lint 2>&1 | head -30"
+          }
+        ]
+      }
+    ]
+  }
+}
